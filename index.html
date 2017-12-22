@@ -23,9 +23,7 @@
 			<div class="slides">
 				<section data-background-image="img/bg.jpg">
 					<h1>Apollo 11</h1>
-					<p>
-						by <a href="https://github.com/IvanKubrick">Ivan Grushevich</a>
-					</p>
+					<p>by <a href="https://github.com/IvanKubrick">Ivan Grushevich</a></p>
 				</section>
 				<section>
 					<h2>Plan</h2>
@@ -58,6 +56,9 @@
 							<li>Fuel.</li>
 						</ol>
 						<img data-src="img/obstacles.jpg">
+					</section>
+					<section>
+						<a href="https://ivankubrick.github.io/apollo11/index.html">link to the game</a>
 					</section>
 				</section>
 
@@ -169,6 +170,87 @@
 							```
 						</script>
 					</section>
+					<section data-markdown data-background="#83f87f" style="font-size: 25px;">
+						<script type="text/template">
+							## Fuel bar
+							```
+							fuelBar = new FuelBar();
+							fuelBar.x = 0;
+							fuelBar.y = 0;  
+							fuelBar.fixedToCamera = true;
+							
+							class FuelBar extends Phaser.Group {
+								constructor() {
+									super(game);
+									this.bar = this.create(0, 0, 'fuelBar');
+									this.fuelAmountPercent = 100;
+									this.renderBar();
+								}
+								decreaseFuel(n) {
+									this.fuelAmountPercent -= n;
+									if (this.fuelAmountPercent < 0) {
+										this.fuelAmountPercent = 0;
+									}
+									this.renderBar();
+								} 
+								increaseFuel() {
+									this.fuelAmountPercent += CONFIGS.fuelIncreaseAmount;
+									if (this.fuelAmountPercent > 100) {
+										this.fuelAmountPercent = 100;
+									}
+									this.renderBar();
+								}
+								renderBar() {
+									this.bar.scale.setTo(CONFIGS.gameWidth / 1000 * this.fuelAmountPercent, 2);
+								}  
+							}
+							```
+						</script>
+					</section>
+					<section data-markdown style="font-size: 25px">
+						<script type="text/template">
+							## Interaction of objects
+							```
+							game.physics.arcade.overlap(rocket, fuelCans, collectFuel, null, this);
+							game.physics.arcade.overlap(rocket, asteroids, destroyAsteroid, null, this);
+							game.physics.arcade.overlap(rocket, moon, setFlag);
+							```
+							```
+							function collectFuel(rocket, fuelCan) {
+								fuelCollectionSound.play('', 0, 0.3);
+								fuelBar.increaseFuel();
+								fuelCan.destroy();
+							}
+							```
+							```
+							function destroyAsteroid(rocket, asteroid) {
+								explosionSound.play('', 0, 0.3);
+						
+								if (asteroid.destroyed === false) {
+									fuelBar.decreaseFuel( CONFIGS.asteroidsAverageDamage * (1 + asteroid.scale.y) );
+									asteroid.destroyed = true;
+									game.physics.arcade.velocityFromRotation( rocket.rotation, rocket.body.velocity.getMagnitude() * 0.6, rocket.body.velocity );
+								} 
+						
+								asteroid.animations.play('explosion');
+								setTimeout(() => {
+									asteroid.destroy();
+								}, 1500); 
+							}
+							```
+							```
+							function setFlag() {
+								if (rocket.reachedMoon === false) {
+									setFlagSound.play();
+									rocket.reachedMoon = true;
+									flag.alpha = 1;
+									reachMoonText.addColor('#067906', 0);
+									rocket.reachedMoon = true;
+								}
+							}
+							```
+						</script>
+					</section>
 				</section>
 
 				<section>
@@ -238,10 +320,10 @@
 
 							The feature of this mode is that all asteroids stop moving. Press "E" key before starting the flight in order to activate the mode.
 							```
-							easyModeKey = game.input.keyboard.addKey(Phaser.Keyboard.E);
+							const easyModeKey = game.input.keyboard.addKey(Phaser.Keyboard.E);
 							easyModeKey.onDown.add(turnOnEasyMode, this); 
 							function turnOnEasyMode() {
-								if (timer.startTime < 0 ){  
+								if (timer.startTime < 0 ) {  
 									asteroids.setAll('body.velocity.x', 0);
 									asteroids.setAll('body.velocity.y', 0); 
 								}
